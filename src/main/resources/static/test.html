@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passkey 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 20px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #b8daff;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Passkey 인증 테스트</h1>
+        
+        <!-- 사용자 등록 -->
+        <div class="section">
+            <h2>1. 사용자 등록</h2>
+            <div class="form-group">
+                <label for="username">사용자명:</label>
+                <input type="text" id="username" placeholder="예: john_doe">
+            </div>
+            <div class="form-group">
+                <label for="displayName">표시명:</label>
+                <input type="text" id="displayName" placeholder="예: John Doe">
+            </div>
+            <button onclick="registerUser()">사용자 등록</button>
+            <div id="registerResult" class="result"></div>
+        </div>
+
+        <!-- Passkey 등록 -->
+        <div class="section">
+            <h2>2. Passkey 등록</h2>
+            <p>먼저 사용자를 등록한 후, 해당 사용자명으로 Passkey를 등록하세요.</p>
+            <div class="form-group">
+                <label for="passkeyUsername">사용자명:</label>
+                <input type="text" id="passkeyUsername" placeholder="등록한 사용자명 입력">
+            </div>
+            <button onclick="registerPasskey()">Passkey 등록</button>
+            <div id="passkeyResult" class="result"></div>
+        </div>
+
+        <!-- 로그인 테스트 -->
+        <div class="section">
+            <h2>3. Passkey 로그인</h2>
+            <button onclick="loginWithPasskey()">Passkey로 로그인</button>
+            <div id="loginResult" class="result"></div>
+        </div>
+
+        <!-- 보호된 리소스 테스트 -->
+        <div class="section">
+            <h2>4. 보호된 리소스 접근</h2>
+            <button onclick="accessProtectedResource()">보호된 페이지 접근</button>
+            <div id="protectedResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // 결과 표시 함수
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `result ${type}`;
+        }
+
+        // Base64 URL 인코딩/디코딩 함수
+        function base64UrlEncode(buffer) {
+            return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
+        function base64UrlDecode(str) {
+            str = str.replace(/-/g, '+').replace(/_/g, '/');
+            while (str.length % 4) {
+                str += '=';
+            }
+            return Uint8Array.from(atob(str), c => c.charCodeAt(0));
+        }
+
+        // 1. 사용자 등록
+        async function registerUser() {
+            const username = document.getElementById('username').value;
+            const displayName = document.getElementById('displayName').value;
+
+            if (!username || !displayName) {
+                showResult('registerResult', '사용자명과 표시명을 모두 입력해주세요.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        displayName: displayName
+                    })
+                });
+
+                if (response.ok) {
+                    showResult('registerResult', `사용자 "${username}" 등록 성공!`, 'success');
+                    document.getElementById('passkeyUsername').value = username;
+                } else {
+                    const error = await response.text();
+                    showResult('registerResult', `등록 실패: ${error}`, 'error');
+                }
+            } catch (error) {
+                showResult('registerResult', `오류: ${error.message}`, 'error');
+            }
+        }
+
+        // 2. Passkey 등록
+        async function registerPasskey() {
+            const username = document.getElementById('passkeyUsername').value;
+
+            if (!username) {
+                showResult('passkeyResult', '사용자명을 입력해주세요.', 'error');
+                return;
+            }
+
+            if (!window.PublicKeyCredential) {
+                showResult('passkeyResult', '이 브라우저는 WebAuthn을 지원하지 않습니다.', 'error');
+                return;
+            }
+
+            try {
+                showResult('passkeyResult', 'Passkey 등록 중...', 'info');
+
+                // 간단한 challenge 생성
+                const challenge = new Uint8Array(32);
+                crypto.getRandomValues(challenge);
+
+                const createCredentialDefaultArgs = {
+                    publicKey: {
+                        rp: {
+                            name: "Test App",
+                            id: "localhost"
+                        },
+                        user: {
+                            id: new TextEncoder().encode(username),
+                            name: username,
+                            displayName: username
+                        },
+                        pubKeyCredParams: [{alg: -7, type: "public-key"}],
+                        authenticatorSelection: {
+                            authenticatorAttachment: "platform",
+                            userVerification: "required"
+                        },
+                        timeout: 60000,
+                        challenge: challenge
+                    }
+                };
+
+                const credential = await navigator.credentials.create(createCredentialDefaultArgs);
+
+                // 서버에 크리덴셜 등록
+                const registrationData = {
+                    credentialId: base64UrlEncode(credential.rawId),
+                    publicKey: base64UrlEncode(credential.response.getPublicKey()),
+                    username: username
+                };
+
+                const response = await fetch('/api/auth/register-credential', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(registrationData)
+                });
+
+                if (response.ok) {
+                    showResult('passkeyResult', 'Passkey 등록 성공!', 'success');
+                } else {
+                    const error = await response.text();
+                    showResult('passkeyResult', `Passkey 등록 실패: ${error}`, 'error');
+                }
+
+            } catch (error) {
+                showResult('passkeyResult', `Passkey 등록 오류: ${error.message}`, 'error');
+            }
+        }
+
+        // 3. Passkey 로그인
+        async function loginWithPasskey() {
+            if (!window.PublicKeyCredential) {
+                showResult('loginResult', '이 브라우저는 WebAuthn을 지원하지 않습니다.', 'error');
+                return;
+            }
+
+            try {
+                showResult('loginResult', 'Passkey로 로그인 중...', 'info');
+
+                const challenge = new Uint8Array(32);
+                crypto.getRandomValues(challenge);
+
+                const getCredentialDefaultArgs = {
+                    publicKey: {
+                        timeout: 60000,
+                        challenge: challenge,
+                        userVerification: "required"
+                    }
+                };
+
+                const assertion = await navigator.credentials.get(getCredentialDefaultArgs);
+
+                // 서버에 인증 요청
+                const authData = {
+                    credentialId: base64UrlEncode(assertion.rawId),
+                    signature: base64UrlEncode(assertion.response.signature)
+                };
+
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(authData)
+                });
+
+                if (response.ok) {
+                    const result = await response.text();
+                    showResult('loginResult', `로그인 성공! ${result}`, 'success');
+                } else {
+                    const error = await response.text();
+                    showResult('loginResult', `로그인 실패: ${error}`, 'error');
+                }
+
+            } catch (error) {
+                showResult('loginResult', `로그인 오류: ${error.message}`, 'error');
+            }
+        }
+
+        // 4. 보호된 리소스 접근
+        async function accessProtectedResource() {
+            try {
+                const response = await fetch('/api/protected');
+                
+                if (response.ok) {
+                    const result = await response.text();
+                    showResult('protectedResult', `접근 성공: ${result}`, 'success');
+                } else if (response.status === 401) {
+                    showResult('protectedResult', '인증이 필요합니다. 먼저 로그인하세요.', 'error');
+                } else {
+                    const error = await response.text();
+                    showResult('protectedResult', `접근 실패: ${error}`, 'error');
+                }
+            } catch (error) {
+                showResult('protectedResult', `오류: ${error.message}`, 'error');
+            }
+        }
+
+        // 페이지 로드 시 WebAuthn 지원 확인
+        window.addEventListener('load', function() {
+            if (!window.PublicKeyCredential) {
+                alert('이 브라우저는 WebAuthn(Passkey)을 지원하지 않습니다.\nChrome, Firefox, Safari 등 최신 브라우저를 사용해주세요.');
+            }
+        });
+    </script>
+</body>
+</html>
