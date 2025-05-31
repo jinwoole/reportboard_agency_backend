@@ -1,9 +1,11 @@
 package agency.reportboard.backend.user.config;
 
+import agency.reportboard.backend.common.dto.ApiResponse;
 import agency.reportboard.backend.user.security.WebAuthnAuthenticationProvider;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -28,13 +30,43 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .maximumSessions(1)
+                .maxSessionsPreventsLogin(false)
+            )
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/").permitAll()
-                .requestMatchers("/**").permitAll()
+                .requestMatchers("/api/auth/register-options", "/api/auth/register", "/api/auth/login-options", "/api/auth/login", "/api/auth/logout").permitAll()
+                .requestMatchers("/", "/index.html", "/static/**").permitAll()
+                .requestMatchers("/api/auth/me").authenticated()
                 .anyRequest().authenticated()
             )
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+                    
+                    ObjectMapper mapper = new ObjectMapper();
+                    ApiResponse<Object> errorResponse = ApiResponse.error("Not authenticated");
+                    String jsonResponse = mapper.writeValueAsString(errorResponse);
+                    response.getWriter().write(jsonResponse);
+                    response.getWriter().flush();
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(403);
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+                    
+                    ObjectMapper mapper = new ObjectMapper();
+                    ApiResponse<Object> errorResponse = ApiResponse.error("Access denied");
+                    String jsonResponse = mapper.writeValueAsString(errorResponse);
+                    response.getWriter().write(jsonResponse);
+                    response.getWriter().flush();
+                })
+            )
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable())
             .authenticationProvider(webAuthnAuthenticationProvider);
         
         return http.build();

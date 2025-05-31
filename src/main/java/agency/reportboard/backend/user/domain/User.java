@@ -18,6 +18,9 @@ public class User {
     @Column(nullable = false)
     private String displayName;
     
+    @Column(nullable = false)
+    private boolean registrationCompleted = false;
+    
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserCredential> credentials = new ArrayList<>();
     
@@ -52,6 +55,14 @@ public class User {
     
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+    
+    public boolean isRegistrationCompleted() {
+        return registrationCompleted;
+    }
+    
+    public void setRegistrationCompleted(boolean registrationCompleted) {
+        this.registrationCompleted = registrationCompleted;
     }
     
     public List<UserCredential> getCredentials() {
