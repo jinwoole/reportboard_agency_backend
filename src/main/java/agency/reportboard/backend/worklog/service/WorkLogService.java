@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.ArrayList;
 import java.util.Optional;
 
 @Service
@@ -70,25 +70,34 @@ public class WorkLogService {
         
         Page<WorkLog> workLogs;
         
-        // 검색 조건에 따른 쿼리 실행
-        if (hasComplexSearchCriteria(searchRequest)) {
-            List<WorkCategory> categories = searchRequest.getCategories() != null 
-                ? List.copyOf(searchRequest.getCategories()) 
-                : null;
-            List<ImportanceLevel> importanceLevels = searchRequest.getImportanceLevels() != null 
-                ? List.copyOf(searchRequest.getImportanceLevels()) 
-                : null;
-                
-            workLogs = workLogRepository.findBySearchCriteria(
-                user,
-                categories,
-                importanceLevels,
-                searchRequest.getKeyword(),
-                startDateTime,
-                endDateTime,
+        // 단순한 검색 조건 처리
+        if (hasOnlyKeyword(searchRequest)) {
+            workLogs = workLogRepository.findByUserAndContentContainingIgnoreCase(
+                user.getId(), 
+                searchRequest.getKeyword(), 
+                pageable
+            );
+        } else if (hasOnlyCategories(searchRequest)) {
+            workLogs = workLogRepository.findByUserAndCategoriesIn(
+                user, 
+                new ArrayList<>(searchRequest.getCategories()), 
+                pageable
+            );
+        } else if (hasOnlyImportanceLevels(searchRequest)) {
+            workLogs = workLogRepository.findByUserAndImportanceLevelsIn(
+                user, 
+                new ArrayList<>(searchRequest.getImportanceLevels()), 
+                pageable
+            );
+        } else if (hasOnlyDateRange(searchRequest)) {
+            workLogs = workLogRepository.findByUserAndCreatedAtBetweenOrderByCreatedAtDesc(
+                user, 
+                startDateTime, 
+                endDateTime, 
                 pageable
             );
         } else {
+            // 복잡한 검색의 경우 메모리에서 필터링
             workLogs = workLogRepository.findByUserOrderByCreatedAtDesc(user, pageable);
         }
         
@@ -158,11 +167,31 @@ public class WorkLogService {
         return PageRequest.of(searchRequest.getPage(), searchRequest.getSize(), sort);
     }
     
-    private boolean hasComplexSearchCriteria(WorkLogSearchRequest searchRequest) {
-        return searchRequest.getStartDate() != null ||
-               searchRequest.getEndDate() != null ||
-               (searchRequest.getCategories() != null && !searchRequest.getCategories().isEmpty()) ||
-               (searchRequest.getImportanceLevels() != null && !searchRequest.getImportanceLevels().isEmpty()) ||
-               (searchRequest.getKeyword() != null && !searchRequest.getKeyword().trim().isEmpty());
+    private boolean hasOnlyKeyword(WorkLogSearchRequest searchRequest) {
+        return searchRequest.getKeyword() != null && !searchRequest.getKeyword().trim().isEmpty() &&
+               (searchRequest.getCategories() == null || searchRequest.getCategories().isEmpty()) &&
+               (searchRequest.getImportanceLevels() == null || searchRequest.getImportanceLevels().isEmpty()) &&
+               searchRequest.getStartDate() == null && searchRequest.getEndDate() == null;
+    }
+    
+    private boolean hasOnlyCategories(WorkLogSearchRequest searchRequest) {
+        return (searchRequest.getCategories() != null && !searchRequest.getCategories().isEmpty()) &&
+               (searchRequest.getKeyword() == null || searchRequest.getKeyword().trim().isEmpty()) &&
+               (searchRequest.getImportanceLevels() == null || searchRequest.getImportanceLevels().isEmpty()) &&
+               searchRequest.getStartDate() == null && searchRequest.getEndDate() == null;
+    }
+    
+    private boolean hasOnlyImportanceLevels(WorkLogSearchRequest searchRequest) {
+        return (searchRequest.getImportanceLevels() != null && !searchRequest.getImportanceLevels().isEmpty()) &&
+               (searchRequest.getKeyword() == null || searchRequest.getKeyword().trim().isEmpty()) &&
+               (searchRequest.getCategories() == null || searchRequest.getCategories().isEmpty()) &&
+               searchRequest.getStartDate() == null && searchRequest.getEndDate() == null;
+    }
+    
+    private boolean hasOnlyDateRange(WorkLogSearchRequest searchRequest) {
+        return (searchRequest.getStartDate() != null || searchRequest.getEndDate() != null) &&
+               (searchRequest.getKeyword() == null || searchRequest.getKeyword().trim().isEmpty()) &&
+               (searchRequest.getCategories() == null || searchRequest.getCategories().isEmpty()) &&
+               (searchRequest.getImportanceLevels() == null || searchRequest.getImportanceLevels().isEmpty());
     }
 }

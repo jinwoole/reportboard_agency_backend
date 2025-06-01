@@ -87,6 +87,12 @@ function setupEventListeners() {
     
     // 템플릿 추가
     document.getElementById('add-template').addEventListener('click', showTemplateModal);
+    
+    // 더미 데이터 생성
+    const dummyDataBtn = document.getElementById('generate-dummy-data');
+    if (dummyDataBtn) {
+        dummyDataBtn.addEventListener('click', generateDummyData);
+    }
 }
 
 // 사이드바 토글
@@ -334,7 +340,9 @@ async function loadMoreWorkLogs() {
 
 // 검색 처리
 function handleSearch(event) {
-    searchFilters.keyword = event.target.value.trim();
+    const keyword = event.target.value.trim();
+    console.log('검색어:', keyword);
+    searchFilters.keyword = keyword;
     currentPage = 0;
     loadWorkLogs(true);
 }
@@ -349,6 +357,11 @@ function handleFilterChange() {
     const importanceFilters = document.querySelectorAll('.importance-filter:checked');
     searchFilters.importanceLevels = Array.from(importanceFilters).map(cb => cb.value);
     
+    console.log('필터 변경:', {
+        categories: searchFilters.categories,
+        importanceLevels: searchFilters.importanceLevels
+    });
+    
     currentPage = 0;
     loadWorkLogs(true);
 }
@@ -360,6 +373,11 @@ function handleDateFilterChange() {
     
     searchFilters.startDate = startDate || null;
     searchFilters.endDate = endDate || null;
+    
+    console.log('날짜 필터 변경:', {
+        startDate: searchFilters.startDate,
+        endDate: searchFilters.endDate
+    });
     
     currentPage = 0;
     loadWorkLogs(true);
@@ -580,6 +598,124 @@ async function showTemplateModal() {
     } catch (error) {
         console.error('템플릿 추가 실패:', error);
         showAlert('템플릿 추가에 실패했습니다.', 'error');
+    }
+}
+
+// 더미 데이터 생성
+async function generateDummyData() {
+    const confirm = window.confirm('더미 데이터를 생성하시겠습니까? (10개의 샘플 업무 로그가 추가됩니다)');
+    if (!confirm) return;
+    
+    const dummyData = [
+        {
+            content: '새로운 사용자 인증 시스템 설계 및 아키텍처 문서 작성',
+            category: 'PLANNING',
+            importance: 'CRITICAL',
+            referenceUrl: 'https://example.com/auth-design',
+            referenceTitle: '인증 시스템 설계 문서'
+        },
+        {
+            content: 'React 컴포넌트 리팩토링 및 성능 최적화 작업',
+            category: 'IMPLEMENTATION',
+            importance: 'IMPORTANT',
+            referenceUrl: null,
+            referenceTitle: null
+        },
+        {
+            content: '프로덕트 팀과 요구사항 리뷰 미팅 및 피드백 정리',
+            category: 'COLLABORATION',
+            importance: 'IMPORTANT',
+            referenceUrl: null,
+            referenceTitle: null
+        },
+        {
+            content: 'Spring Security 6.0 새로운 기능 학습 및 적용 방안 검토',
+            category: 'LEARNING',
+            importance: 'NORMAL',
+            referenceUrl: 'https://docs.spring.io/spring-security/reference/',
+            referenceTitle: 'Spring Security 6.0 문서'
+        },
+        {
+            content: '데이터베이스 쿼리 성능 분석 및 인덱스 최적화',
+            category: 'ANALYSIS',
+            importance: 'CRITICAL',
+            referenceUrl: null,
+            referenceTitle: null
+        },
+        {
+            content: '프로덕션 환경 메모리 누수 문제 해결',
+            category: 'PROBLEM_SOLVING',
+            importance: 'CRITICAL',
+            referenceUrl: null,
+            referenceTitle: null
+        },
+        {
+            content: 'API 문서 업데이트 및 Swagger 설정 개선',
+            category: 'DOCUMENTATION',
+            importance: 'NORMAL',
+            referenceUrl: 'https://swagger.io/',
+            referenceTitle: 'Swagger 공식 문서'
+        },
+        {
+            content: '마이크로서비스 아키텍처 도입을 위한 기술 스택 연구',
+            category: 'LEARNING',
+            importance: 'IMPORTANT',
+            referenceUrl: null,
+            referenceTitle: null
+        },
+        {
+            content: '새로운 기능 개발을 위한 프로토타입 구현',
+            category: 'IMPLEMENTATION',
+            importance: 'IMPORTANT',
+            referenceUrl: null,
+            referenceTitle: null
+        },
+        {
+            content: '코드 리뷰 및 품질 개선 사항 검토',
+            category: 'ANALYSIS',
+            importance: 'NORMAL',
+            referenceUrl: null,
+            referenceTitle: null
+        }
+    ];
+    
+    try {
+        const button = document.getElementById('generate-dummy-data');
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>생성 중...';
+        
+        // 더미 데이터를 순차적으로 생성
+        for (const data of dummyData) {
+            const response = await fetch('/api/worklogs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`데이터 생성 실패: ${data.content}`);
+            }
+            
+            // 각 요청 사이에 짧은 지연시간 추가
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // 데이터 새로고침
+        currentPage = 0;
+        await Promise.all([
+            loadWorkLogs(true),
+            loadStats()
+        ]);
+        
+        showAlert('더미 데이터가 성공적으로 생성되었습니다!', 'success');
+        
+    } catch (error) {
+        console.error('더미 데이터 생성 실패:', error);
+        showAlert('더미 데이터 생성에 실패했습니다.', 'error');
+    } finally {
+        const button = document.getElementById('generate-dummy-data');
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-database mr-2"></i>더미 데이터';
     }
 }
 

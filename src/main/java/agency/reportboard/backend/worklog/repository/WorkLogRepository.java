@@ -28,29 +28,33 @@ public interface WorkLogRepository extends JpaRepository<WorkLog, Long> {
         Pageable pageable
     );
     
-    @Query("SELECT w FROM WorkLog w WHERE w.user = :user AND " +
-           "LOWER(w.content) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "ORDER BY w.createdAt DESC")
+    // Use native query to avoid enum conversion issues
+    @Query(value = "SELECT * FROM work_logs w WHERE w.user_id = :userId AND " +
+                   "LOWER(w.content) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                   "ORDER BY w.created_at DESC",
+           nativeQuery = true)
     Page<WorkLog> findByUserAndContentContainingIgnoreCase(
-        @Param("user") User user, 
+        @Param("userId") Long userId, 
         @Param("keyword") String keyword, 
         Pageable pageable
     );
     
+    // Separate methods for better enum handling
     @Query("SELECT w FROM WorkLog w WHERE w.user = :user " +
-           "AND (:categories IS NULL OR w.category IN :categories) " +
-           "AND (:importanceLevels IS NULL OR w.importance IN :importanceLevels) " +
-           "AND (:keyword IS NULL OR LOWER(w.content) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-           "AND (:startDate IS NULL OR w.createdAt >= :startDate) " +
-           "AND (:endDate IS NULL OR w.createdAt <= :endDate) " +
+           "AND w.category IN :categories " +
            "ORDER BY w.createdAt DESC")
-    Page<WorkLog> findBySearchCriteria(
+    Page<WorkLog> findByUserAndCategoriesIn(
         @Param("user") User user,
         @Param("categories") List<WorkCategory> categories,
+        Pageable pageable
+    );
+    
+    @Query("SELECT w FROM WorkLog w WHERE w.user = :user " +
+           "AND w.importance IN :importanceLevels " +
+           "ORDER BY w.createdAt DESC")
+    Page<WorkLog> findByUserAndImportanceLevelsIn(
+        @Param("user") User user,
         @Param("importanceLevels") List<ImportanceLevel> importanceLevels,
-        @Param("keyword") String keyword,
-        @Param("startDate") LocalDateTime startDate,
-        @Param("endDate") LocalDateTime endDate,
         Pageable pageable
     );
     

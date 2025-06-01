@@ -32,9 +32,82 @@ public class WorkLogController {
     
     @GetMapping
     public ResponseEntity<Page<WorkLogResponse>> getWorkLogs(
-            @ModelAttribute WorkLogSearchRequest searchRequest,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) String[] categories,
+            @RequestParam(required = false) String[] importanceLevels,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection,
             Authentication authentication) {
+        
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        
+        // SearchRequest 객체 생성
+        WorkLogSearchRequest searchRequest = new WorkLogSearchRequest();
+        
+        // 날짜 파라미터 처리
+        if (startDate != null && !startDate.isEmpty() && !startDate.equals("null")) {
+            try {
+                searchRequest.setStartDate(java.time.LocalDate.parse(startDate));
+            } catch (Exception e) {
+                // 날짜 파싱 에러 무시
+            }
+        }
+        
+        if (endDate != null && !endDate.isEmpty() && !endDate.equals("null")) {
+            try {
+                searchRequest.setEndDate(java.time.LocalDate.parse(endDate));
+            } catch (Exception e) {
+                // 날짜 파싱 에러 무시
+            }
+        }
+        
+        // 카테고리 파라미터 처리
+        if (categories != null && categories.length > 0) {
+            java.util.Set<agency.reportboard.backend.worklog.domain.WorkCategory> categorySet = 
+                new java.util.HashSet<>();
+            for (String category : categories) {
+                if (category != null && !category.isEmpty() && !category.equals("null")) {
+                    try {
+                        categorySet.add(agency.reportboard.backend.worklog.domain.WorkCategory.valueOf(category.toUpperCase()));
+                    } catch (IllegalArgumentException e) {
+                        // 잘못된 카테고리 무시
+                    }
+                }
+            }
+            searchRequest.setCategories(categorySet);
+        }
+        
+        // 중요도 파라미터 처리
+        if (importanceLevels != null && importanceLevels.length > 0) {
+            java.util.Set<agency.reportboard.backend.worklog.domain.ImportanceLevel> importanceSet = 
+                new java.util.HashSet<>();
+            for (String importance : importanceLevels) {
+                if (importance != null && !importance.isEmpty() && !importance.equals("null")) {
+                    try {
+                        importanceSet.add(agency.reportboard.backend.worklog.domain.ImportanceLevel.valueOf(importance.toUpperCase()));
+                    } catch (IllegalArgumentException e) {
+                        // 잘못된 중요도 무시
+                    }
+                }
+            }
+            searchRequest.setImportanceLevels(importanceSet);
+        }
+        
+        // 키워드 처리
+        if (keyword != null && !keyword.isEmpty() && !keyword.equals("null")) {
+            searchRequest.setKeyword(keyword);
+        }
+        
+        // 페이징 정보 설정
+        searchRequest.setPage(page);
+        searchRequest.setSize(size);
+        searchRequest.setSortBy(sortBy);
+        searchRequest.setSortDirection(sortDirection);
+        
         Page<WorkLogResponse> workLogs = workLogService.getWorkLogs(principal.getUser(), searchRequest);
         return ResponseEntity.ok(workLogs);
     }
