@@ -1,8 +1,6 @@
 package agency.reportboard.backend.user.config;
 
-import agency.reportboard.backend.common.dto.ApiResponse;
 import agency.reportboard.backend.user.security.WebAuthnAuthenticationProvider;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
  import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -37,8 +35,11 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/auth/register-options", "/api/auth/register", "/api/auth/login-options", "/api/auth/login", "/api/auth/logout").permitAll()
-                .requestMatchers("/", "/index.html", "/static/**").permitAll()
+                .requestMatchers("/", "/index.html", "/dashboard.html").permitAll()
+                .requestMatchers("/static/**").permitAll()
+                .requestMatchers("*.css", "*.js", "*.png", "*.jpg", "*.ico").permitAll()
                 .requestMatchers("/api/auth/me").authenticated()
+                .requestMatchers("/api/memo/**").authenticated()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exceptions -> exceptions
@@ -47,9 +48,7 @@ public class SecurityConfig {
                     response.setContentType("application/json");
                     response.setCharacterEncoding("UTF-8");
                     
-                    ObjectMapper mapper = new ObjectMapper();
-                    ApiResponse<Object> errorResponse = ApiResponse.error("Not authenticated");
-                    String jsonResponse = mapper.writeValueAsString(errorResponse);
+                    String jsonResponse = "{\"error\":\"Not authenticated\"}";
                     response.getWriter().write(jsonResponse);
                     response.getWriter().flush();
                 })
@@ -58,9 +57,7 @@ public class SecurityConfig {
                     response.setContentType("application/json");
                     response.setCharacterEncoding("UTF-8");
                     
-                    ObjectMapper mapper = new ObjectMapper();
-                    ApiResponse<Object> errorResponse = ApiResponse.error("Access denied");
-                    String jsonResponse = mapper.writeValueAsString(errorResponse);
+                    String jsonResponse = "{\"error\":\"Access denied\"}";
                     response.getWriter().write(jsonResponse);
                     response.getWriter().flush();
                 })
@@ -75,13 +72,20 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        
+        // SvelteKit 개발 서버와 프로덕션 도메인 허용
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:5173",  // SvelteKit 개발 서버
+            "http://localhost:3000",  // SvelteKit 프로덕션 (Node.js)
+            "http://localhost:4173"   // SvelteKit 프리뷰
+        ));
+        
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(true); // 세션 쿠키 전송을 위해 필요
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/api/**", configuration);
         return source;
     }
 }

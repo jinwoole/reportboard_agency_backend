@@ -1,6 +1,5 @@
 package agency.reportboard.backend.user.controller;
 
-import agency.reportboard.backend.common.dto.ApiResponse;
 import agency.reportboard.backend.user.security.UserPrincipal;
 import agency.reportboard.backend.user.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -72,14 +71,35 @@ public class AuthController {
         cleanupThread.start();
     }
     
-    // Base64URL 인코딩 유틸리티
+    // Base64URL 인코딩/디코딩 유틸리티 (WebAuthn 표준)
     private String base64UrlEncode(byte[] data) {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(data);
     }
     
+    private byte[] base64UrlDecode(String data) {
+        try {
+            // Base64URL에서 패딩이 없는 경우 패딩 추가
+            String padded = data;
+            int padding = 4 - (data.length() % 4);
+            if (padding != 4) {
+                padded = data + "=".repeat(padding);
+            }
+            return Base64.getUrlDecoder().decode(padded);
+        } catch (IllegalArgumentException e) {
+            // Base64URL 디코딩 실패 시 그대로 반환 (credential ID는 문자열로 저장)
+            System.out.println("Base64URL decode failed for: " + data + ", using as plain string");
+            return data.getBytes(StandardCharsets.UTF_8);
+        }
+    }
+    
+    // 간단한 credential ID 생성 (UUID 기반)
+    private String generateCredentialId() {
+        return UUID.randomUUID().toString().replace("-", "");
+    }
+    
     // WebAuthn 등록 옵션 생성
     @PostMapping("/register-options")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getRegisterOptions(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, Object>> getRegisterOptions(@RequestBody Map<String, String> request) {
         try {
             String username = request.get("username");
             String displayName = request.get("displayName");
@@ -87,13 +107,13 @@ public class AuthController {
             
             if (username == null || displayName == null || email == null) {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Missing required fields"));
+                        .body(Map.of("error", "Missing required fields"));
             }
             
             // 사용자 중복 확인
             if (userService.findByUsername(username).isPresent()) {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Username already exists"));
+                        .body(Map.of("error", "Username already exists"));
             }
             
             // 챌린지 생성
@@ -124,24 +144,25 @@ public class AuthController {
                 Map.of("type", "public-key", "alg", -257) // RS256
             ));
             options.put("authenticatorSelection", Map.of(
-                "authenticatorAttachment", "platform",
-                "userVerification", "preferred",
-                "residentKey", "preferred"
+                // authenticatorAttachment 제거로 모든 인증기 지원 (1Password, YubiKey, Windows Hello 등)
+                "userVerification", "preferred", // 사용자 선택권 제공
+                "residentKey", "preferred",
+                "requireResidentKey", false // 1Password 같은 외부 관리자도 사용 가능
             ));
             options.put("attestation", "direct");
             options.put("timeout", 60000);
             
-            return ResponseEntity.ok(ApiResponse.success(options));
+            return ResponseEntity.ok(options);
             
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Failed to generate registration options"));
+                    .body(Map.of("error", "Failed to generate registration options"));
         }
     }
     
     // WebAuthn 로그인 옵션 생성
     @PostMapping("/login-options")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getLoginOptions(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, Object>> getLoginOptions(@RequestBody Map<String, String> request) {
         try {
             String username = request.get("username");
             
@@ -156,37 +177,35 @@ public class AuthController {
             
             Map<String, Object> options = new HashMap<>();
             options.put("challenge", challengeStr);
-            options.put("timeout", 60000);
+            options.put("timeout", 120000); // 더 긴 타임아웃으로 사용자가 선택할 시간 제공
             options.put("rpId", "localhost");
+            // userVerification을 "preferred"로 설정하여 외부 인증기도 선택 가능하게 함
             options.put("userVerification", "preferred");
             
-            // 특정 사용자의 credential만 허용하거나 모든 credential 허용
+            // allowCredentials를 설정하지 않으면 브라우저가 모든 사용 가능한 인증기를 표시
+            // 이렇게 하면 1Password, Bitwarden 등 외부 패스키 관리자가 먼저 나타남
             if (username != null && !username.trim().isEmpty()) {
                 var credentials = userService.getCredentialsByUsername(username);
-                if (!credentials.isEmpty()) {
-                    List<Map<String, Object>> allowCredentials = new ArrayList<>();
-                    for (var cred : credentials) {
-                        Map<String, Object> credentialDescriptor = new HashMap<>();
-                        credentialDescriptor.put("type", "public-key");
-                        credentialDescriptor.put("id", base64UrlEncode(cred.getCredentialId().getBytes()));
-                        allowCredentials.add(credentialDescriptor);
-                    }
-                    options.put("allowCredentials", allowCredentials);
+                if (credentials.isEmpty()) {
+                    return ResponseEntity.badRequest()
+                            .body(Map.of("error", "No credentials found for user"));
                 }
+                // 특정 credential을 지정하지 않고 사용자가 선택하도록 함
+                // allowCredentials를 비워두면 브라우저가 사용 가능한 모든 패스키를 표시
             }
             
-            return ResponseEntity.ok(ApiResponse.success(options));
+            return ResponseEntity.ok(options);
             
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Failed to generate login options"));
+                    .body(Map.of("error", "Failed to generate login options"));
         }
     }
     
     
     // WebAuthn 등록 처리
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> register(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, Object>> register(@RequestBody Map<String, String> request) {
         try {
             String username = request.get("username");
             String credentialId = request.get("credentialId");
@@ -197,14 +216,14 @@ public class AuthController {
             
             if (username == null || credentialId == null || publicKey == null) {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Missing required fields"));
+                        .body(Map.of("error", "Missing required fields"));
             }
             
             // 저장된 챌린지 확인
             ChallengeData challengeData = challengeStore.remove(username + "_register");
             if (challengeData == null || challengeData.isExpired()) {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Invalid or expired challenge"));
+                        .body(Map.of("error", "Invalid or expired challenge"));
             }
             
             // 실제 환경에서는 여기서 attestation 검증을 수행해야 함
@@ -219,18 +238,19 @@ public class AuthController {
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("username", user.getUsername());
             responseData.put("displayName", user.getDisplayName());
+            responseData.put("message", "Registration successful");
             
-            return ResponseEntity.ok(ApiResponse.success("Registration successful", responseData));
+            return ResponseEntity.ok(responseData);
             
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(e.getMessage()));
+                    .body(Map.of("error", e.getMessage()));
         }
     }
     
     // WebAuthn 로그인 처리
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> login(@RequestBody Map<String, String> request, 
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> request, 
                                                                  HttpServletRequest httpRequest) {
         try {
             String credentialId = request.get("credentialId");
@@ -241,7 +261,7 @@ public class AuthController {
             
             if (credentialId == null || signature == null) {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Missing credentials"));
+                        .body(Map.of("error", "Missing credentials"));
             }
             
             // 저장된 챌린지 확인 (간단한 구현)
@@ -251,7 +271,7 @@ public class AuthController {
             var credential = userService.findByCredentialId(credentialId);
             if (credential.isEmpty()) {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Invalid credentials"));
+                        .body(Map.of("error", "Invalid credentials"));
             }
             
             var user = credential.get().getUser();
@@ -259,7 +279,7 @@ public class AuthController {
             // 등록이 완료된 사용자만 로그인 허용
             if (!user.isRegistrationCompleted()) {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("User registration not completed"));
+                        .body(Map.of("error", "User registration not completed"));
             }
             
             // 실제 환경에서는 여기서 서명 검증을 수행해야 함
@@ -278,17 +298,18 @@ public class AuthController {
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("username", user.getUsername());
             responseData.put("displayName", user.getDisplayName());
+            responseData.put("message", "Login successful");
             
-            return ResponseEntity.ok(ApiResponse.success("Login successful", responseData));
+            return ResponseEntity.ok(responseData);
             
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Authentication failed"));
+                    .body(Map.of("error", "Authentication failed"));
         }
     }
     
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getCurrentUser() {
+    public ResponseEntity<Map<String, Object>> getCurrentUser() {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth != null && auth.getPrincipal() instanceof UserPrincipal) {
@@ -296,18 +317,18 @@ public class AuthController {
                 Map<String, Object> responseData = new HashMap<>();
                 responseData.put("username", principal.getUsername());
                 responseData.put("displayName", principal.getDisplayName());
-                return ResponseEntity.ok(ApiResponse.success(responseData));
+                return ResponseEntity.ok(responseData);
             }
             return ResponseEntity.status(401)
-                    .body(ApiResponse.error("Not authenticated"));
+                    .body(Map.of("error", "Not authenticated"));
         } catch (Exception e) {
             return ResponseEntity.status(500)
-                    .body(ApiResponse.error("Internal server error"));
+                    .body(Map.of("error", "Internal server error"));
         }
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<String>> logout(HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> logout(HttpServletRequest request) {
         try {
             // 세션 무효화
             HttpSession session = request.getSession(false);
@@ -318,10 +339,10 @@ public class AuthController {
             // Security Context 초기화
             SecurityContextHolder.clearContext();
             
-            return ResponseEntity.ok(ApiResponse.success("Logout successful"));
+            return ResponseEntity.ok(Map.of("message", "Logout successful"));
         } catch (Exception e) {
             return ResponseEntity.status(500)
-                    .body(ApiResponse.error("Logout failed"));
+                    .body(Map.of("error", "Logout failed"));
         }
     }
 }

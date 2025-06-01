@@ -130,8 +130,8 @@ public class UserService {
             user.setRegistrationCompleted(true);
             user = userRepository.save(user);
             
-            // Passkey 크리덴셜 등록
-            byte[] publicKeyBytes = Base64.getDecoder().decode(publicKey);
+            // Passkey 크리덴셜 등록 (임시로 더미 데이터 사용)
+            byte[] publicKeyBytes = publicKey.getBytes(); // 임시로 문자열을 바이트로 변환
             UserCredential credential = new UserCredential(
                     credentialId,
                     publicKeyBytes,

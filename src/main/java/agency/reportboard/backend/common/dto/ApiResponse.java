@@ -2,6 +2,7 @@ package agency.reportboard.backend.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * 통일된 API 응답 형식
@@ -12,14 +13,15 @@ public class ApiResponse<T> {
     private String message;
     private T data;
     private String error;
-    private LocalDateTime timestamp;
+    
+    private String timestamp;
 
     private ApiResponse(boolean success, String message, T data, String error) {
         this.success = success;
         this.message = message;
         this.data = data;
         this.error = error;
-        this.timestamp = LocalDateTime.now();
+        this.timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
 
     // 성공 응답 (데이터 포함)
@@ -64,7 +66,7 @@ public class ApiResponse<T> {
         return error;
     }
 
-    public LocalDateTime getTimestamp() {
+    public String getTimestamp() {
         return timestamp;
     }
 }
