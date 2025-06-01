@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkLog - 업무 기록 관리</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0;
+            padding: 0;
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .shadow-custom {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .hover-scale {
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .hover-scale:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .category-implementation { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1d4ed8; }
+        .category-planning { background: linear-gradient(135deg, #f3e8ff, #e9d5ff); color: #7c3aed; }
+        .category-collaboration { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #d97706; }
+        .category-learning { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #16a34a; }
+        .category-analysis { background: linear-gradient(135deg, #fed7d7, #fecaca); color: #e53e3e; }
+        .category-problem_solving { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #dc2626; }
+        .category-documentation { background: linear-gradient(135deg, #e0f2fe, #bae6fd); color: #0369a1; }
+        
+        .importance-critical { 
+            border-left: 4px solid #ef4444; 
+            background: linear-gradient(to right, rgba(239, 68, 68, 0.1), transparent);
+        }
+        .importance-important { 
+            border-left: 4px solid #f59e0b; 
+            background: linear-gradient(to right, rgba(245, 158, 11, 0.1), transparent);
+        }
+        .importance-normal { 
+            border-left: 4px solid #10b981; 
+            background: linear-gradient(to right, rgba(16, 185, 129, 0.1), transparent);
+        }
+        
+        .sidebar-transition {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        .worklog-item {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .worklog-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #d1d5db;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar-hidden {
+                transform: translateX(-100%);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-blue-50 font-sans">
+    <!-- Header -->
+    <header class="gradient-bg shadow-custom sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <button id="sidebar-toggle" class="md:hidden p-2 rounded-md text-white hover:bg-white hover:bg-opacity-20 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-colors">
+                        <i class="fas fa-bars text-lg"></i>
+                    </button>
+                    <div class="flex-shrink-0 ml-4 md:ml-0">
+                        <h1 class="text-2xl font-bold text-white">
+                            <i class="fas fa-clipboard-list mr-2"></i>WorkLog
+                        </h1>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-white text-sm">
+                        <span id="currentDateTime" class="font-medium"></span>
+                    </div>
+                    <span id="user-display-name" class="text-sm text-white font-medium"></span>
+                    <button id="logout-btn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200">
+                        <i class="fas fa-sign-out-alt mr-2"></i>로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex min-h-screen">
+        <!-- Left Sidebar -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 glass shadow-lg transform md:relative md:translate-x-0 sidebar-transition sidebar-hidden md:sidebar-visible pt-16 md:pt-0">
+            <div class="flex flex-col h-full">
+                <!-- 오늘의 테마 -->
+                <div class="p-4 border-b border-gray-200 border-opacity-30">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-3">
+                        <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>오늘의 테마
+                    </h3>
+                    <div id="today-theme-container">
+                        <input type="text" id="today-theme-input" placeholder="오늘의 주요 업무 테마를 입력하세요" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <button id="save-theme-btn" class="mt-2 w-full gradient-bg text-white px-3 py-2 rounded-lg text-sm hover:opacity-90 transition-opacity">
+                            <i class="fas fa-save mr-2"></i>테마 저장
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 필터 -->
+                <div class="p-4 border-b border-gray-200 border-opacity-30">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-3">
+                        <i class="fas fa-filter mr-2 text-blue-500"></i>필터
+                    </h3>
+                    
+                    <!-- 카테고리 필터 -->
+                    <div class="mb-4">
+                        <label class="text-xs font-medium text-gray-700 mb-2 block">카테고리</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center hover:bg-gray-50 hover:bg-opacity-50 rounded p-1 transition-colors">
+                                <input type="checkbox" value="IMPLEMENTATION" class="category-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">🔨 실행/구현</span>
+                            </label>
+                            <label class="flex items-center hover:bg-gray-50 hover:bg-opacity-50 rounded p-1 transition-colors">
+                                <input type="checkbox" value="PLANNING" class="category-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">📋 계획/설계</span>
+                            </label>
+                            <label class="flex items-center hover:bg-gray-50 hover:bg-opacity-50 rounded p-1 transition-colors">
+                                <input type="checkbox" value="COLLABORATION" class="category-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">💬 소통/협업</span>
+                            </label>
+                            <label class="flex items-center hover:bg-gray-50 hover:bg-opacity-50 rounded p-1 transition-colors">
+                                <input type="checkbox" value="LEARNING" class="category-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">📚 학습/연구</span>
+                            </label>
+                            <label class="flex items-center hover:bg-gray-50 hover:bg-opacity-50 rounded p-1 transition-colors">
+                                <input type="checkbox" value="ANALYSIS" class="category-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">🔍 분석/검토</span>
+                            </label>
+                            <label class="flex items-center hover:bg-gray-50 hover:bg-opacity-50 rounded p-1 transition-colors">
+                                <input type="checkbox" value="PROBLEM_SOLVING" class="category-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">🛠️ 문제해결</span>
+                            </label>
+                            <label class="flex items-center hover:bg-gray-50 hover:bg-opacity-50 rounded p-1 transition-colors">
+                                <input type="checkbox" value="DOCUMENTATION" class="category-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">📊 보고/문서화</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 중요도 필터 -->
+                    <div class="mb-4">
+                        <label class="text-xs font-medium text-gray-700 mb-2 block">중요도</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center hover:bg-gray-50 hover:bg-opacity-50 rounded p-1 transition-colors">
+                                <input type="checkbox" value="CRITICAL" class="importance-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">⭐⭐⭐ 핵심</span>
+                            </label>
+                            <label class="flex items-center hover:bg-gray-50 hover:bg-opacity-50 rounded p-1 transition-colors">
+                                <input type="checkbox" value="IMPORTANT" class="importance-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">⭐⭐ 중요</span>
+                            </label>
+                            <label class="flex items-center hover:bg-gray-50 hover:bg-opacity-50 rounded p-1 transition-colors">
+                                <input type="checkbox" value="NORMAL" class="importance-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">⭐ 보통</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 날짜 필터 -->
+                    <div class="mb-4">
+                        <label class="text-xs font-medium text-gray-700 mb-2 block">기간</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="date" id="start-date" class="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <input type="date" id="end-date" class="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <button id="clear-filters" class="w-full text-xs text-gray-500 hover:text-gray-700 border border-gray-300 rounded py-2 hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-eraser mr-1"></i>필터 초기화
+                    </button>
+                </div>
+
+                <!-- 통계 -->
+                <div class="p-4 flex-1">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-3">
+                        <i class="fas fa-chart-pie mr-2 text-green-500"></i>통계
+                    </h3>
+                    <div id="stats-container" class="space-y-3 text-xs">
+                        <!-- 통계 정보가 여기에 동적으로 추가됩니다 -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-hidden md:ml-0">
+            <div class="h-full flex flex-col">
+                <!-- Search Bar -->
+                <div class="glass border-b border-gray-200 border-opacity-30 p-4">
+                    <div class="max-w-md mx-auto">
+                        <div class="relative">
+                            <input type="text" id="search-input" placeholder="업무 내용 검색..." 
+                                   class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Add Form -->
+                <div class="glass border-b border-gray-200 border-opacity-30 p-4">
+                    <form id="quick-add-form" class="space-y-3">
+                        <div class="flex flex-col md:flex-row md:items-center md:space-x-3 space-y-2 md:space-y-0">
+                            <input type="text" id="content-input" placeholder="업무 내용을 간단히 입력하세요..." 
+                                   class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm" required>
+                            
+                            <select id="category-select" class="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm" required>
+                                <option value="">카테고리 선택</option>
+                                <option value="IMPLEMENTATION">🔨 실행/구현</option>
+                                <option value="PLANNING">📋 계획/설계</option>
+                                <option value="COLLABORATION">💬 소통/협업</option>
+                                <option value="LEARNING">📚 학습/연구</option>
+                                <option value="ANALYSIS">🔍 분석/검토</option>
+                                <option value="PROBLEM_SOLVING">🛠️ 문제해결</option>
+                                <option value="DOCUMENTATION">📊 보고/문서화</option>
+                            </select>
+                            
+                            <select id="importance-select" class="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm" required>
+                                <option value="">중요도</option>
+                                <option value="NORMAL">⭐ 보통</option>
+                                <option value="IMPORTANT">⭐⭐ 중요</option>
+                                <option value="CRITICAL">⭐⭐⭐ 핵심</option>
+                            </select>
+                            
+                            <button type="submit" class="gradient-bg text-white px-6 py-3 rounded-xl hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap font-medium shadow-sm hover-scale">
+                                <i class="fas fa-plus mr-2"></i>추가
+                            </button>
+                        </div>
+                        
+                        <!-- 참조 링크 (선택사항) -->
+                        <div class="flex flex-col md:flex-row md:space-x-3 space-y-2 md:space-y-0">
+                            <input type="url" id="reference-url" placeholder="참조 URL (선택사항)" 
+                                   class="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                            <input type="text" id="reference-title" placeholder="참조 제목" 
+                                   class="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                        </div>
+                    </form>
+                </div>
+
+                <!-- WorkLog List -->
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div id="worklog-list" class="space-y-4 max-w-4xl mx-auto">
+                        <!-- 업무 로그들이 여기에 동적으로 추가됩니다 -->
+                    </div>
+                    
+                    <!-- Loading Indicator -->
+                    <div id="loading" class="text-center py-8 hidden">
+                        <div class="inline-flex items-center">
+                            <i class="fas fa-spinner fa-spin text-blue-500 text-2xl mr-3"></i>
+                            <span class="text-gray-600 font-medium">로딩 중...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Load More Button -->
+                    <div class="text-center py-4">
+                        <button id="load-more" class="bg-white border border-gray-300 text-gray-700 px-8 py-3 rounded-xl hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 hidden shadow-sm hover-scale">
+                            <i class="fas fa-chevron-down mr-2"></i>더 보기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel (Desktop only) -->
+        <aside class="hidden xl:block w-80 glass shadow-lg">
+            <div class="h-full flex flex-col">
+                <!-- 템플릿 -->
+                <div class="p-4 border-b border-gray-200 border-opacity-30">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-3">
+                        <i class="fas fa-bookmark mr-2 text-purple-500"></i>빠른 템플릿
+                    </h3>
+                    <div id="template-list" class="space-y-2">
+                        <!-- 템플릿들이 여기에 동적으로 추가됩니다 -->
+                    </div>
+                    <button id="add-template" class="w-full mt-3 text-sm text-blue-600 hover:text-blue-800 border border-blue-300 rounded-lg py-2 hover:bg-blue-50 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>새 템플릿
+                    </button>
+                </div>
+
+                <!-- 최근 활동 -->
+                <div class="p-4 flex-1">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-3">
+                        <i class="fas fa-brain mr-2 text-pink-500"></i>최근 활동 패턴
+                    </h3>
+                    <div id="activity-pattern" class="text-sm text-gray-600">
+                        <!-- AI 인사이트가 여기에 표시됩니다 -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Sidebar Overlay (Mobile) -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden hidden"></div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>

@@ -24,6 +24,16 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserCredential> credentials = new ArrayList<>();
     
+    // WorkLog 관련 관계 추가
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<agency.reportboard.backend.worklog.domain.WorkLog> workLogs = new ArrayList<>();
+    
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<agency.reportboard.backend.worklog.domain.DailyTheme> dailyThemes = new ArrayList<>();
+    
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<agency.reportboard.backend.worklog.domain.Template> templates = new ArrayList<>();
+    
     // 기본 생성자
     public User() {}
     
