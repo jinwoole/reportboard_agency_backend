@@ -10,6 +10,8 @@ import agency.reportboard.backend.worklog.dto.WorkLogSearchRequest;
 import agency.reportboard.backend.worklog.repository.WorkLogRepository;
 import agency.reportboard.backend.worklog.repository.DailyThemeRepository;
 import agency.reportboard.backend.user.domain.User;
+import agency.reportboard.backend.user.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,8 +19,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -27,6 +34,9 @@ public class WorkLogService {
     
     private final WorkLogRepository workLogRepository;
     private final DailyThemeRepository dailyThemeRepository;
+    
+    @Autowired
+    private UserRepository userRepository;
     
     public WorkLogService(WorkLogRepository workLogRepository, DailyThemeRepository dailyThemeRepository) {
         this.workLogRepository = workLogRepository;
@@ -42,7 +52,7 @@ public class WorkLogService {
         );
         
         workLog.setReferenceUrl(request.getReferenceUrl());
-        workLog.setReferenceTitle(request.getReferenceTitle());
+        workLog.setMemo(request.getMemo());
         
         // 일일 테마 설정
         if (request.getDailyThemeId() != null) {
@@ -120,7 +130,7 @@ public class WorkLogService {
         workLog.setCategory(request.getCategory());
         workLog.setImportance(request.getImportance());
         workLog.setReferenceUrl(request.getReferenceUrl());
-        workLog.setReferenceTitle(request.getReferenceTitle());
+        workLog.setMemo(request.getMemo());
         
         // 일일 테마 업데이트
         if (request.getDailyThemeId() != null) {
@@ -157,6 +167,58 @@ public class WorkLogService {
     @Transactional(readOnly = true)
     public long getCountByImportance(User user, ImportanceLevel importance) {
         return workLogRepository.countByUserAndImportance(user, importance);
+    }
+    
+    // 최근 7일간 날짜별 기록 개수
+    public Map<String, Long> getWeeklyStats(Long userId) {
+        LocalDate today = LocalDate.now();
+        LocalDate start = today.minusDays(6);
+        Map<String, Long> result = new LinkedHashMap<>();
+        User user = userRepository.findById(userId).orElseThrow();
+        for (int i = 0; i < 7; i++) {
+            LocalDate date = start.plusDays(i);
+            long count = workLogRepository.countByUserAndCreatedAtBetween(
+                user,
+                date.atStartOfDay(),
+                date.plusDays(1).atStartOfDay()
+            );
+            result.put(date.toString(), count);
+        }
+        return result;
+    }
+
+    // 연속 기록 일수(스트릭)
+    public int getStreakCount(Long userId) {
+        LocalDate today = LocalDate.now();
+        int streak = 0;
+        User user = userRepository.findById(userId).orElseThrow();
+        for (int i = 0; i < 365; i++) {
+            LocalDate date = today.minusDays(i);
+            long count = workLogRepository.countByUserAndCreatedAtBetween(
+                user,
+                date.atStartOfDay(),
+                date.plusDays(1).atStartOfDay()
+            );
+            if (count > 0) {
+                streak++;
+            } else {
+                break;
+            }
+        }
+        return streak;
+    }
+
+    // 이번 주 기록 수
+    public long getWeekCount(Long userId) {
+        LocalDate today = LocalDate.now();
+        WeekFields weekFields = WeekFields.of(Locale.getDefault());
+        LocalDate startOfWeek = today.with(weekFields.dayOfWeek(), 1);
+        User user = userRepository.findById(userId).orElseThrow();
+        return workLogRepository.countByUserAndCreatedAtBetween(
+            user,
+            startOfWeek.atStartOfDay(),
+            today.plusDays(1).atStartOfDay()
+        );
     }
     
     private Pageable createPageable(WorkLogSearchRequest searchRequest) {

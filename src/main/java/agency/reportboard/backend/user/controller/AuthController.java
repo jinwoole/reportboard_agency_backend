@@ -131,7 +131,7 @@ public class AuthController {
             Map<String, Object> options = new HashMap<>();
             options.put("rp", Map.of(
                 "name", "Report Board",
-                "id", "localhost"
+                "id", "reportboard.agency" // RP ID를 "reportboard.agency"로 변경
             ));
             options.put("user", Map.of(
                 "id", userIdStr,
@@ -178,7 +178,7 @@ public class AuthController {
             Map<String, Object> options = new HashMap<>();
             options.put("challenge", challengeStr);
             options.put("timeout", 120000); // 더 긴 타임아웃으로 사용자가 선택할 시간 제공
-            options.put("rpId", "localhost");
+            options.put("rpId", "reportboard.agency"); // RP ID를 "reportboard.agency"로 변경
             // userVerification을 "preferred"로 설정하여 외부 인증기도 선택 가능하게 함
             options.put("userVerification", "preferred");
             

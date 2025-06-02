@@ -31,6 +31,7 @@ public class TemplateService {
             request.getName(),
             request.getContent(),
             request.getDefaultCategory(),
+            request.getDefaultImportance(),
             user
         );
         
@@ -67,6 +68,7 @@ public class TemplateService {
         template.setName(request.getName());
         template.setContent(request.getContent());
         template.setDefaultCategory(request.getDefaultCategory());
+        template.setDefaultImportance(request.getDefaultImportance());
         
         Template savedTemplate = templateRepository.save(template);
         return TemplateResponse.from(savedTemplate);

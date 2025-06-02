@@ -172,20 +172,14 @@
 
         function base64UrlToArrayBuffer(base64url) {
             if (!base64url) {
-                console.warn('Empty base64url string provided');
                 return new ArrayBuffer(0);
             }
-            
             try {
-                // Convert base64URL to base64
                 let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-                
-                // Add padding if necessary
                 const padding = 4 - (base64.length % 4);
                 if (padding !== 4) {
                     base64 += '='.repeat(padding);
                 }
-                
                 const binaryString = atob(base64);
                 const bytes = new Uint8Array(binaryString.length);
                 for (let i = 0; i < binaryString.length; i++) {
@@ -193,103 +187,55 @@
                 }
                 return bytes.buffer;
             } catch (error) {
-                console.error('Base64 decoding error:', error, 'Input:', base64url);
                 throw new Error('Base64 디코딩 실패: ' + base64url);
             }
-        }
-
-        // 디버깅을 위한 함수
-        function logBase64Conversion(name, original, converted) {
-            console.log(`${name}:`, {
-                original: original,
-                converted: converted,
-                originalType: typeof original,
-                convertedType: typeof converted
-            });
         }
 
         // Registration
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const username = document.getElementById('registerUsername').value;
             const displayName = document.getElementById('displayName').value;
             const email = document.getElementById('email').value;
-
             try {
-                console.log('=== 회원가입 시작 ===');
-                console.log('사용자 정보:', { username, displayName, email });
-
                 // Step 1: Get registration options
                 const optionsResponse = await fetch('/api/auth/register-options', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, displayName, email })
                 });
-
                 if (!optionsResponse.ok) {
                     const errorData = await optionsResponse.json();
                     throw new Error(errorData.error || `등록 옵션 요청 실패: ${optionsResponse.statusText}`);
                 }
-
                 const options = await optionsResponse.json();
-                console.log('서버에서 받은 옵션:', options);
-                
-                // Convert base64URL strings to ArrayBuffers for WebAuthn
-                console.log('=== Base64 변환 시작 ===');
-                
-                logBase64Conversion('Challenge (원본)', options.challenge, null);
                 options.challenge = base64UrlToArrayBuffer(options.challenge);
-                logBase64Conversion('Challenge (변환후)', null, options.challenge);
-                
-                logBase64Conversion('User ID (원본)', options.user.id, null);
                 options.user.id = base64UrlToArrayBuffer(options.user.id);
-                logBase64Conversion('User ID (변환후)', null, options.user.id);
-
-                console.log('=== WebAuthn credential 생성 시작 ===');
-                
                 // Step 2: Create credential
                 const credential = await navigator.credentials.create({ publicKey: options });
-                console.log('생성된 credential:', credential);
-
-                console.log('=== 회원가입 완료 요청 ===');
-                
-                // 브라우저가 생성한 credential.id를 그대로 사용 (이미 문자열)
-                const credentialId = credential.id; // 브라우저가 자동 생성한 credential ID
-                console.log('Credential ID (문자열):', credentialId);
-                
                 // Step 3: Complete registration
+                const credentialId = credential.id;
                 const registerData = {
                     username: username,
-                    credentialId: credentialId,  // 브라우저 생성 ID를 그대로 사용
-                    publicKey: "dummy-public-key", // 임시 더미 값
+                    credentialId: credentialId,
+                    publicKey: "dummy-public-key",
                     attestationObject: arrayBufferToBase64Url(credential.response.attestationObject),
                     clientDataJSON: arrayBufferToBase64Url(credential.response.clientDataJSON)
                 };
-                
-                console.log('서버로 전송할 데이터:', registerData);
-
                 const registerResponse = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(registerData)
                 });
-
                 if (registerResponse.ok) {
-                    const result = await registerResponse.json();
-                    console.log('회원가입 성공:', result);
                     showAlert('회원가입이 완료되었습니다!', 'success');
                     document.getElementById('registerForm').reset();
-                    // Switch to login tab
                     document.getElementById('login-tab').click();
                 } else {
                     const errorData = await registerResponse.json();
-                    console.error('회원가입 실패:', errorData);
                     throw new Error(errorData.error || '회원가입 완료 실패');
                 }
-
             } catch (error) {
-                console.error('=== 회원가입 오류 ===', error);
                 showAlert('회원가입 중 오류가 발생했습니다: ' + error.message);
             }
         });
@@ -297,29 +243,19 @@
         // Login
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const username = document.getElementById('loginUsername').value;
-
             try {
-                console.log('=== 로그인 시작 ===');
-                console.log('사용자명:', username);
-
                 // Step 1: Get login options
                 const optionsResponse = await fetch('/api/auth/login-options', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username })
                 });
-
                 if (!optionsResponse.ok) {
                     const errorData = await optionsResponse.json();
                     throw new Error(errorData.error || `Authentication failed: ${optionsResponse.statusText}`);
                 }
-
                 const options = await optionsResponse.json();
-                console.log('로그인 옵션:', options);
-                
-                // Convert base64URL strings to ArrayBuffers
                 options.challenge = base64UrlToArrayBuffer(options.challenge);
                 if (options.allowCredentials) {
                     options.allowCredentials = options.allowCredentials.map(cred => ({
@@ -327,39 +263,23 @@
                         id: base64UrlToArrayBuffer(cred.id)
                     }));
                 }
-
-                console.log('=== WebAuthn 인증 시작 ===');
-                console.log('브라우저가 다음 인증 옵션들을 표시할 예정입니다:');
-                console.log('1. 1Password, Bitwarden (패스키 관리자) - 추천');
-                console.log('2. Windows Hello (생체인증/PIN)');
-                console.log('3. YubiKey, FIDO 보안 키');
-                console.log('4. 스마트폰/태블릿 패스키');
-
-                // Show user-friendly message before authentication
-                showAlert('🔐 패스키로 로그인하세요. 1Password 사용자는 브라우저 확장 프로그램을 먼저 확인하세요!', 'info');
-
-                // Step 2: Get assertion (모든 인증기 지원)
+                showAlert('🔐 패스키로 로그인하세요.', 'info');
+                // Step 2: Get assertion
                 const assertion = await navigator.credentials.get({ publicKey: options });
-                console.log('인증 완료:', assertion);
-
                 // Step 3: Complete authentication
                 const loginResponse = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        credentialId: assertion.id, // 브라우저 생성 ID를 그대로 사용
+                        credentialId: assertion.id,
                         signature: arrayBufferToBase64Url(assertion.response.signature),
                         authenticatorData: arrayBufferToBase64Url(assertion.response.authenticatorData),
                         clientDataJSON: arrayBufferToBase64Url(assertion.response.clientDataJSON),
                         userHandle: assertion.response.userHandle ? arrayBufferToBase64Url(assertion.response.userHandle) : null
                     })
                 });
-
                 if (loginResponse.ok) {
-                    const result = await loginResponse.json();
-                    console.log('로그인 성공:', result);
                     showAlert('로그인 성공!', 'success');
-                    // Redirect to dashboard or main page
                     setTimeout(() => {
                         window.location.href = '/dashboard.html';
                     }, 1500);
@@ -367,9 +287,7 @@
                     const errorData = await loginResponse.json();
                     throw new Error(errorData.error || 'Authentication completion failed');
                 }
-
             } catch (error) {
-                console.error('=== 로그인 오류 ===', error);
                 if (error.name === 'NotAllowedError') {
                     showAlert('인증이 취소되었습니다. 생체인증, 1Password, 보안 키 등을 사용해보세요.');
                 } else if (error.name === 'InvalidStateError') {

@@ -1,6 +1,7 @@
 package agency.reportboard.backend.worklog.dto;
 
 import agency.reportboard.backend.worklog.domain.WorkCategory;
+import agency.reportboard.backend.worklog.domain.ImportanceLevel;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -16,13 +17,16 @@ public class TemplateRequest {
     
     private WorkCategory defaultCategory;
     
+    private ImportanceLevel defaultImportance;
+    
     // 기본 생성자
     public TemplateRequest() {}
     
-    public TemplateRequest(String name, String content, WorkCategory defaultCategory) {
+    public TemplateRequest(String name, String content, WorkCategory defaultCategory, ImportanceLevel defaultImportance) {
         this.name = name;
         this.content = content;
         this.defaultCategory = defaultCategory;
+        this.defaultImportance = defaultImportance;
     }
     
     // Getters and Setters
@@ -48,5 +52,13 @@ public class TemplateRequest {
     
     public void setDefaultCategory(WorkCategory defaultCategory) {
         this.defaultCategory = defaultCategory;
+    }
+    
+    public ImportanceLevel getDefaultImportance() {
+        return defaultImportance;
+    }
+    
+    public void setDefaultImportance(ImportanceLevel defaultImportance) {
+        this.defaultImportance = defaultImportance;
     }
 }

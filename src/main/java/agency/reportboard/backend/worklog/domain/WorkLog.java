@@ -27,7 +27,7 @@ public class WorkLog {
     private String referenceUrl;
     
     @Column
-    private String referenceTitle;
+    private String memo;
     
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -107,12 +107,12 @@ public class WorkLog {
         this.referenceUrl = referenceUrl;
     }
     
-    public String getReferenceTitle() {
-        return referenceTitle;
+    public String getMemo() {
+        return memo;
     }
     
-    public void setReferenceTitle(String referenceTitle) {
-        this.referenceTitle = referenceTitle;
+    public void setMemo(String memo) {
+        this.memo = memo;
     }
     
     public LocalDateTime getCreatedAt() {

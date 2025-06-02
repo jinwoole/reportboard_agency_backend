@@ -75,9 +75,8 @@ public class SecurityConfig {
         
         // SvelteKit 개발 서버와 프로덕션 도메인 허용
         configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:5173",  // SvelteKit 개발 서버
-            "http://localhost:3000",  // SvelteKit 프로덕션 (Node.js)
-            "http://localhost:4173"   // SvelteKit 프리뷰
+            "http://localhost:5173",
+            "https://reportboard.agency"
         ));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));

@@ -65,4 +65,6 @@ public interface WorkLogRepository extends JpaRepository<WorkLog, Long> {
     long countByUserAndCategory(User user, WorkCategory category);
     
     long countByUserAndImportance(User user, ImportanceLevel importance);
+
+    long countByUserAndCreatedAtBetween(User user, LocalDateTime start, LocalDateTime end);
 }

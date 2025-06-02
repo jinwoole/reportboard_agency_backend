@@ -13,7 +13,7 @@ public class WorkLogResponse {
     private WorkCategory category;
     private ImportanceLevel importance;
     private String referenceUrl;
-    private String referenceTitle;
+    private String memo;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private DailyThemeResponse dailyTheme;
@@ -29,7 +29,7 @@ public class WorkLogResponse {
         response.setCategory(workLog.getCategory());
         response.setImportance(workLog.getImportance());
         response.setReferenceUrl(workLog.getReferenceUrl());
-        response.setReferenceTitle(workLog.getReferenceTitle());
+        response.setMemo(workLog.getMemo());
         response.setCreatedAt(workLog.getCreatedAt());
         response.setUpdatedAt(workLog.getUpdatedAt());
         
@@ -81,12 +81,12 @@ public class WorkLogResponse {
         this.referenceUrl = referenceUrl;
     }
     
-    public String getReferenceTitle() {
-        return referenceTitle;
+    public String getMemo() {
+        return memo;
     }
     
-    public void setReferenceTitle(String referenceTitle) {
-        this.referenceTitle = referenceTitle;
+    public void setMemo(String memo) {
+        this.memo = memo;
     }
     
     public LocalDateTime getCreatedAt() {

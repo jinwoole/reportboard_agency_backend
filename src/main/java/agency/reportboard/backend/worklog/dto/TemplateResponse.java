@@ -2,6 +2,7 @@ package agency.reportboard.backend.worklog.dto;
 
 import agency.reportboard.backend.worklog.domain.Template;
 import agency.reportboard.backend.worklog.domain.WorkCategory;
+import agency.reportboard.backend.worklog.domain.ImportanceLevel;
 
 public class TemplateResponse {
     
@@ -9,6 +10,7 @@ public class TemplateResponse {
     private String name;
     private String content;
     private WorkCategory defaultCategory;
+    private ImportanceLevel defaultImportance;
     
     // 기본 생성자
     public TemplateResponse() {}
@@ -20,6 +22,7 @@ public class TemplateResponse {
         response.setName(template.getName());
         response.setContent(template.getContent());
         response.setDefaultCategory(template.getDefaultCategory());
+        response.setDefaultImportance(template.getDefaultImportance());
         return response;
     }
     
@@ -54,5 +57,13 @@ public class TemplateResponse {
     
     public void setDefaultCategory(WorkCategory defaultCategory) {
         this.defaultCategory = defaultCategory;
+    }
+    
+    public ImportanceLevel getDefaultImportance() {
+        return defaultImportance;
+    }
+    
+    public void setDefaultImportance(ImportanceLevel defaultImportance) {
+        this.defaultImportance = defaultImportance;
     }
 }

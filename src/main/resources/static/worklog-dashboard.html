@@ -88,18 +88,20 @@
     <!-- Header -->
     <header class="gradient-bg shadow-custom sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
+            <div class="flex items-center h-16">
+                <!-- 왼쪽: WorkLog 타이틀 -->
+                <div class="flex items-center flex-shrink-0">
                     <button id="sidebar-toggle" class="md:hidden p-2 rounded-md text-white hover:bg-white hover:bg-opacity-20 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-colors">
                         <i class="fas fa-bars text-lg"></i>
                     </button>
-                    <div class="flex-shrink-0 ml-4 md:ml-0">
+                    <div class="ml-4 md:ml-0">
                         <h1 class="text-2xl font-bold text-white">
                             <i class="fas fa-clipboard-list mr-2"></i>WorkLog
                         </h1>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
+                <!-- 오른쪽: 기타 정보 -->
+                <div class="flex items-center space-x-4 ml-auto">
                     <div class="text-white text-sm">
                         <span id="currentDateTime" class="font-medium"></span>
                     </div>
@@ -114,22 +116,8 @@
 
     <div class="flex min-h-screen">
         <!-- Left Sidebar -->
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 glass shadow-lg transform md:relative md:translate-x-0 sidebar-transition sidebar-hidden md:sidebar-visible pt-16 md:pt-0">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 glass shadow-lg transform md:relative md:translate-x-0 sidebar-transition sidebar-hidden md:sidebar-visible pt-16 md:pt-0">
             <div class="flex flex-col h-full">
-                <!-- 오늘의 테마 -->
-                <div class="p-4 border-b border-gray-200 border-opacity-30">
-                    <h3 class="text-sm font-semibold text-gray-800 mb-3">
-                        <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>오늘의 테마
-                    </h3>
-                    <div id="today-theme-container">
-                        <input type="text" id="today-theme-input" placeholder="오늘의 주요 업무 테마를 입력하세요" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <button id="save-theme-btn" class="mt-2 w-full gradient-bg text-white px-3 py-2 rounded-lg text-sm hover:opacity-90 transition-opacity">
-                            <i class="fas fa-save mr-2"></i>테마 저장
-                        </button>
-                    </div>
-                </div>
-
                 <!-- 필터 -->
                 <div class="p-4 border-b border-gray-200 border-opacity-30">
                     <h3 class="text-sm font-semibold text-gray-800 mb-3">
@@ -233,41 +221,74 @@
                 </div>
 
                 <!-- Quick Add Form -->
-                <div class="glass border-b border-gray-200 border-opacity-30 p-4">
-                    <form id="quick-add-form" class="space-y-3">
-                        <div class="flex flex-col md:flex-row md:items-center md:space-x-3 space-y-2 md:space-y-0">
-                            <input type="text" id="content-input" placeholder="업무 내용을 간단히 입력하세요..." 
-                                   class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm" required>
-                            
-                            <select id="category-select" class="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm" required>
-                                <option value="">카테고리 선택</option>
-                                <option value="IMPLEMENTATION">🔨 실행/구현</option>
-                                <option value="PLANNING">📋 계획/설계</option>
-                                <option value="COLLABORATION">💬 소통/협업</option>
-                                <option value="LEARNING">📚 학습/연구</option>
-                                <option value="ANALYSIS">🔍 분석/검토</option>
-                                <option value="PROBLEM_SOLVING">🛠️ 문제해결</option>
-                                <option value="DOCUMENTATION">📊 보고/문서화</option>
-                            </select>
-                            
-                            <select id="importance-select" class="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm" required>
-                                <option value="">중요도</option>
-                                <option value="NORMAL">⭐ 보통</option>
-                                <option value="IMPORTANT">⭐⭐ 중요</option>
-                                <option value="CRITICAL">⭐⭐⭐ 핵심</option>
-                            </select>
-                            
-                            <button type="submit" class="gradient-bg text-white px-6 py-3 rounded-xl hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap font-medium shadow-sm hover-scale">
-                                <i class="fas fa-plus mr-2"></i>추가
-                            </button>
+                <div class="glass border-b border-gray-200 border-opacity-30 p-6">
+                    <form id="quick-add-form" class="space-y-6">
+                        <!-- Main Input Area with Gradient Border -->
+                        <div class="relative">
+                            <div class="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-2xl blur-sm opacity-20"></div>
+                            <div class="relative bg-white bg-opacity-90 backdrop-blur-sm rounded-2xl p-6 border border-white border-opacity-50 shadow-xl">
+                                <textarea id="content-input" placeholder="오늘 무엇을 하셨나요? ✨" 
+                                          class="w-full px-6 py-4 border-0 rounded-xl focus:outline-none focus:ring-3 focus:ring-blue-400 focus:ring-opacity-50 shadow-inner resize-none bg-gray-50 bg-opacity-80 text-gray-800 placeholder-gray-500 text-lg leading-relaxed" 
+                                          rows="3" 
+                                          maxlength="500" 
+                                          required></textarea>
+                                <div class="text-right text-xs text-gray-400 mt-2">
+                                    <span id="char-count">0</span>/500
+                                </div>
+                            </div>
                         </div>
                         
-                        <!-- 참조 링크 (선택사항) -->
-                        <div class="flex flex-col md:flex-row md:space-x-3 space-y-2 md:space-y-0">
-                            <input type="url" id="reference-url" placeholder="참조 URL (선택사항)" 
-                                   class="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
-                            <input type="text" id="reference-title" placeholder="참조 제목" 
-                                   class="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                        <!-- Category and Importance with Enhanced Design -->
+                        <div class="flex flex-col md:flex-row md:space-x-4 space-y-3 md:space-y-0">
+                            <div class="relative flex-1">
+                                <div class="absolute inset-0 bg-gradient-to-r from-green-400 to-blue-500 rounded-xl blur-sm opacity-15"></div>
+                                <select id="category-select" class="relative w-full px-5 py-4 border-0 rounded-xl focus:outline-none focus:ring-3 focus:ring-green-400 focus:ring-opacity-50 shadow-lg bg-white bg-opacity-90 text-gray-800 font-medium cursor-pointer" required>
+                                    <option value="" class="text-gray-500">🎯 카테고리 선택</option>
+                                    <option value="IMPLEMENTATION">🔨 실행/구현</option>
+                                    <option value="PLANNING">📋 계획/설계</option>
+                                    <option value="COLLABORATION">🤝 협업/소통</option>
+                                    <option value="LEARNING">📚 학습/연구</option>
+                                    <option value="ANALYSIS">📊 분석/검토</option>
+                                    <option value="PROBLEM_SOLVING">🔧 문제해결</option>
+                                    <option value="DOCUMENTATION">📝 문서화</option>
+                                </select>
+                            </div>
+                            
+                            <div class="relative flex-1">
+                                <div class="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl blur-sm opacity-15"></div>
+                                <select id="importance-select" class="relative w-full px-5 py-4 border-0 rounded-xl focus:outline-none focus:ring-3 focus:ring-yellow-400 focus:ring-opacity-50 shadow-lg bg-white bg-opacity-90 text-gray-800 font-medium cursor-pointer" required>
+                                    <option value="" class="text-gray-500">⭐ 중요도 선택</option>
+                                    <option value="NORMAL">⭐ 보통</option>
+                                    <option value="IMPORTANT">⭐⭐ 중요</option>
+                                    <option value="CRITICAL">⭐⭐⭐ 핵심</option>
+                                </select>
+                            </div>
+                            
+                            <div class="relative">
+                                <div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl blur-sm opacity-20"></div>
+                                <button type="submit" class="relative px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-3 focus:ring-purple-400 focus:ring-opacity-50 whitespace-nowrap font-semibold shadow-xl transform hover:scale-105 transition-all duration-200">
+                                    <i class="fas fa-plus mr-2"></i>✨ 추가
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Reference and Memo Section -->
+                        <div class="relative">
+                            <div class="absolute inset-0 bg-gradient-to-r from-cyan-400 to-teal-500 rounded-xl blur-sm opacity-10"></div>
+                            <div class="relative bg-white bg-opacity-60 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-30">
+                                <div class="flex flex-col md:flex-row md:space-x-4 space-y-3 md:space-y-0">
+                                    <div class="flex-1">
+                                        <input type="url" id="reference-url" placeholder="🔗 참조 URL (선택사항)" 
+                                               class="w-full px-4 py-3 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-50 shadow-sm bg-white bg-opacity-80 text-gray-800 placeholder-gray-500">
+                                    </div>
+                                    <div class="flex-1">
+                                        <textarea id="memo" placeholder="📝 메모 (선택사항)" 
+                                                  class="w-full px-4 py-3 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-opacity-50 shadow-sm bg-white bg-opacity-80 text-gray-800 placeholder-gray-500 resize-none" 
+                                                  rows="2"
+                                                  maxlength="500"></textarea>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -312,13 +333,16 @@
                     </button>
                 </div>
 
-                <!-- 최근 활동 -->
+                <!-- 템플릿 관리 -->
                 <div class="p-4 flex-1">
                     <h3 class="text-sm font-semibold text-gray-800 mb-3">
-                        <i class="fas fa-brain mr-2 text-pink-500"></i>최근 활동 패턴
+                        <i class="fas fa-cog mr-2 text-gray-600"></i>템플릿 관리
                     </h3>
-                    <div id="activity-pattern" class="text-sm text-gray-600">
-                        <!-- AI 인사이트가 여기에 표시됩니다 -->
+                    <div id="template-management" class="text-sm text-gray-600">
+                        <p class="text-gray-500 text-xs mb-3">템플릿을 선택하여 편집하거나 삭제할 수 있습니다.</p>
+                        <div id="template-actions" class="space-y-2">
+                            <!-- 템플릿 관리 UI가 여기에 표시됩니다 -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -326,8 +350,9 @@
     </div>
 
     <!-- Sidebar Overlay (Mobile) -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden hidden"></div>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden hidden"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="dashboard.js"></script>
 </body>
 </html>

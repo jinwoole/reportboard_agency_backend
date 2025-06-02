@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -168,5 +169,22 @@ public class WorkLogController {
             "importantCount", workLogService.getCountByImportance(principal.getUser(), 
                 agency.reportboard.backend.worklog.domain.ImportanceLevel.IMPORTANT)
         ));
+    }
+
+    @GetMapping("/stats/weekly")
+    public Map<String, Long> getWeeklyStats(@AuthenticationPrincipal UserPrincipal principal) {
+        return workLogService.getWeeklyStats(principal.getUser().getId());
+    }
+
+    @GetMapping("/stats/streak")
+    public Map<String, Integer> getStreak(@AuthenticationPrincipal UserPrincipal principal) {
+        int streak = workLogService.getStreakCount(principal.getUser().getId());
+        return Map.of("streak", streak);
+    }
+
+    @GetMapping("/stats/week-count")
+    public Map<String, Long> getWeekCount(@AuthenticationPrincipal UserPrincipal principal) {
+        long count = workLogService.getWeekCount(principal.getUser().getId());
+        return Map.of("weekCount", count);
     }
 }

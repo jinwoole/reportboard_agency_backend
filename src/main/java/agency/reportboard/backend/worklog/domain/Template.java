@@ -20,6 +20,9 @@ public class Template {
     @Enumerated(EnumType.STRING)
     private WorkCategory defaultCategory;
     
+    @Enumerated(EnumType.STRING)
+    private ImportanceLevel defaultImportance;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -27,10 +30,11 @@ public class Template {
     // 기본 생성자
     public Template() {}
     
-    public Template(String name, String content, WorkCategory defaultCategory, User user) {
+    public Template(String name, String content, WorkCategory defaultCategory, ImportanceLevel defaultImportance, User user) {
         this.name = name;
         this.content = content;
         this.defaultCategory = defaultCategory;
+        this.defaultImportance = defaultImportance;
         this.user = user;
     }
     
@@ -65,6 +69,14 @@ public class Template {
     
     public void setDefaultCategory(WorkCategory defaultCategory) {
         this.defaultCategory = defaultCategory;
+    }
+    
+    public ImportanceLevel getDefaultImportance() {
+        return defaultImportance;
+    }
+    
+    public void setDefaultImportance(ImportanceLevel defaultImportance) {
+        this.defaultImportance = defaultImportance;
     }
     
     public User getUser() {

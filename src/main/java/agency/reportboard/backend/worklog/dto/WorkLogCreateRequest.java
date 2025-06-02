@@ -22,8 +22,8 @@ public class WorkLogCreateRequest {
     @URL(message = "올바른 URL 형식이어야 합니다")
     private String referenceUrl;
     
-    @Size(max = 100, message = "참조 제목은 100자를 초과할 수 없습니다")
-    private String referenceTitle;
+    @Size(max = 500, message = "메모는 500자를 초과할 수 없습니다")
+    private String memo;
     
     private Long dailyThemeId;
     
@@ -63,12 +63,12 @@ public class WorkLogCreateRequest {
         this.referenceUrl = referenceUrl;
     }
     
-    public String getReferenceTitle() {
-        return referenceTitle;
+    public String getMemo() {
+        return memo;
     }
     
-    public void setReferenceTitle(String referenceTitle) {
-        this.referenceTitle = referenceTitle;
+    public void setMemo(String memo) {
+        this.memo = memo;
     }
     
     public Long getDailyThemeId() {
